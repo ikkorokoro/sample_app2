@@ -1,0 +1,8 @@
+<% if @feed_items.any? %>
+  <ol class="microposts">
+    <%= render @feed_items %><%#_micropost.html.erbを呼び出す。each文を省略することができる%>
+  </ol>
+  <%= will_paginate @feed_items,
+                    params: { controller: :static_pages, action: :home } %>
+  <%#micropostsコントローラーにはcreateとdestroyアクションしか作成していないためでのコントローラーのアクションを動かすのか引数で渡す必要がある。%>
+<% end %>
