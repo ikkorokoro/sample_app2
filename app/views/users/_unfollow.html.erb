@@ -1,0 +1,5 @@
+<%= form_with(model: current_user.active_relationships.find_by(followed_id: @user.id),
+            html: { method: :delete }, remote: true) do |f| %><%#remotr: trueによりjavaspによる変更も受け付ける%>
+                                    <%# java%>
+  <%= f.submit "Unfollow", class: "btn" %>
+<% end %>

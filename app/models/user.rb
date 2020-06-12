@@ -1,5 +1,20 @@
 class User < ApplicationRecord
   has_many :microposts, dependent: :destroy
+  #default: class_name: Micropost {Model Names}sを関連づけさせようとする}
+  #default: foreign_key: user_id なので記述する必要がなかった
+  has_many :active_relationships,  class_name:  "Relationship",#defaultではactive_relationshipモデルを関連づけさせてしまうがそのモデルはないので関連づけしたいテーブル名を指定する
+                                  foreign_key: "follower_id",#他のモデルと関連づけさせるためのカラムの指定
+                                    dependent:   :destroy
+  
+  has_many :passive_relationships, class_name:  "Relationship",
+                                  foreign_key: "followed_id",
+                                    dependent:   :destroy
+  
+  has_many :following, through: :active_relationships, #自分がフォローしたユーザーのfollowed_idからフォローしたユーザーのデータを呼び出す。
+                        source: :followed
+  has_many :followers, through: :passive_relationships, 
+                        source: :follower
+  
   attr_accessor :remember_token, :activation_token, :reset_token
   before_save :downcase_email
   before_save :create_activation_digest
@@ -69,8 +84,30 @@ class User < ApplicationRecord
   
   # 試作feedの定義
   # 完全な実装は次章の「ユーザーをフォローする」を参照
+    # ユーザーのステータスフィードを返す
+    
   def feed
-    Micropost.where("user_id = ?", self.id)#ユーザーのMicropostを全て呼び出す
+    following_ids = "SELECT followed_id FROM relationships
+                     WHERE follower_id = :user_id"
+    Micropost.where("user_id IN (#{following_ids})
+                     OR user_id = :user_id", user_id: id)#ユーザーのMicropostを全て呼び出す
+   #Micropost.where("user_id IN (:following_ids) OR user_id = :user_id",
+     #following_ids: following_ids, user_id: id)
+  end
+  
+  # ユーザーをフォローする
+  def follow(other_user)
+    following << other_user#自分がフォローしているユーザーの配列のデータの中に新しくフォローしたユーザーを追加する
+  end
+  
+  # ユーザーをフォロー解除する
+  def unfollow(other_user)
+    active_relationships.find_by(followed_id: other_user.id).destroy
+  end
+  
+   # 現在のユーザーがフォローしてたらtrueを返す
+  def following?(other_user)
+    following.include?(other_user)
   end
   
 private
